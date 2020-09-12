@@ -132,6 +132,7 @@ namespace MoocDownloader.App.ViewModels
                 return;
             }
 
+
             if (MessageBox.Show(@"开始下载?", @"提示", MessageBoxButtons.OKCancel, MessageBoxIcon.Information)
              == DialogResult.Cancel)
             {
@@ -277,44 +278,7 @@ namespace MoocDownloader.App.ViewModels
                 return;
             }
 
-            try
-            {
-                await DownloadCourseListAsync(course, mooc);
-            }
-            catch (Exception exception)
-            {
-                SetUIStatus(true);
-                Log($"下载课程发生错误, 原因: {exception}");
-
-                return;
-            }
-
-            SetUIStatus(true);
-
-            if (_isCancel)
-            {
-                Log("已取消下载.");
-
-                ResetCurrentBar();
-                ResetTotalBar();
-            }
-            else
-            {
-                UpdateTotalBar(100);
-                UpdateCurrentBar(100);
-                SetStatus("下载完成");
-                Log($"课程 {course.CourseName} 已下载完成!");
-
-                MessageBox.Show(
-                    $"课程 {course.CourseName} 已下载完成!", @"提示", MessageBoxButtons.OK, MessageBoxIcon.Information
-                );
-            }
-        }
-
-        private async Task DownloadCourseListAsync(CourseModel course, MoocRequest mooc)
-        {
-            int chapterIndex;
-            for (chapterIndex = 0; chapterIndex < course.Chapters.Count && !_isCancel; chapterIndex++)
+            for (var chapterIndex = 0; chapterIndex < course.Chapters.Count && !_isCancel; chapterIndex++)
             {
                 if (chapterIndex >= course.Chapters.Count)
                 {
@@ -443,16 +407,15 @@ namespace MoocDownloader.App.ViewModels
                                       && (VideoQuality) v.Quality == _config.VideoQuality
                                 );
 
-                                var videoFormat = videoInfo?.Format?.ToLower();
-
-                                switch (videoFormat) // m3u8 format.
+                                if (videoInfo != null && !string.IsNullOrEmpty(videoInfo.Format))
                                 {
-                                    case "hls":
+                                    if (videoInfo.Format.ToLower() == "hls") // m3u8 format.
+                                    {
                                         var videoUrl = new Uri(videoInfo.VideoUrl); // video url.
 
-                                        var baseUrl =
-                                            $@"{videoUrl.Scheme}://{videoUrl.Host}" +
-                                            string.Join("", videoUrl.Segments.Take(videoUrl.Segments.Length - 1));
+                                        var baseUrl = $@"{videoUrl.Scheme}://{videoUrl.Host}" +
+                                                      string.Join(
+                                                          "", videoUrl.Segments.Take(videoUrl.Segments.Length - 1));
 
                                         Configuration.Default.BaseUri = new Uri(baseUrl, UriKind.Absolute);
 
@@ -540,9 +503,9 @@ namespace MoocDownloader.App.ViewModels
                                         {
                                             Log($"下载课程 {unitFileName} 的视频发生错误, 原因: {exception.Message}");
                                         }
-
-                                        break;
-                                    case "mp4":
+                                    }
+                                    else if (videoInfo.Format.ToLower() == "mp4")
+                                    {
                                         var mp4Url = string.Empty;
 
                                         switch (_config.VideoQuality)
@@ -590,9 +553,9 @@ namespace MoocDownloader.App.ViewModels
                                                 Log($"下载课程 {unitFileName} 的视频发生错误, 原因: {exception.Message}");
                                             }
                                         }
-
-                                        break;
-                                    case "flv":
+                                    }
+                                    else if (videoInfo.Format.ToLower() == "flv")
+                                    {
                                         var flvUrl = string.Empty;
 
                                         switch (_config.VideoQuality)
@@ -640,8 +603,7 @@ namespace MoocDownloader.App.ViewModels
                                                 Log($"下载课程 {unitFileName} 的视频发生错误, 原因: {exception.Message}");
                                             }
                                         }
-
-                                        break;
+                                    }
                                 }
                             }
                                 break;
@@ -659,6 +621,27 @@ namespace MoocDownloader.App.ViewModels
                         }
                     }
                 }
+            }
+
+            SetUIStatus(true);
+
+            if (_isCancel)
+            {
+                Log("已取消下载.");
+
+                ResetCurrentBar();
+                ResetTotalBar();
+            }
+            else
+            {
+                UpdateTotalBar(100);
+                UpdateCurrentBar(100);
+                SetStatus("下载完成");
+                Log($"课程 {course.CourseName} 已下载完成!");
+
+                MessageBox.Show(
+                    $"课程 {course.CourseName} 已下载完成!", @"提示", MessageBoxButtons.OK, MessageBoxIcon.Information
+                );
             }
         }
 
@@ -726,7 +709,7 @@ namespace MoocDownloader.App.ViewModels
 
             if (string.IsNullOrEmpty(unit.JsonContent))
             {
-                Log($"附件 {unit.Name} 下载链接为空, 跳过下载.");
+                Log($"附件 {unit?.Name} 下载链接为空, 跳过下载.");
                 return;
             }
 
