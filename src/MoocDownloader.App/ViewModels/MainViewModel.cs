@@ -746,7 +746,7 @@ namespace MoocDownloader.App.ViewModels
 
             if (string.IsNullOrEmpty(unit.JsonContent))
             {
-                Log($"附件 {unit?.Name} 下载链接为空, 跳过下载.");
+                Log($"附件 {unit.Name} 下载链接为空, 跳过下载.");
                 return;
             }
 
